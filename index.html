@@ -2,89 +2,85 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>253-Row Data Bridge (Fixed)</title>
+    <title>253-Row Extension Bridge</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: #f4f7f9; }
-        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: #f0f4f8; color: #333; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .header { border-bottom: 2px solid #007bff; margin-bottom: 25px; padding-bottom: 10px; }
         .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-        textarea { width: 100%; height: 250px; padding: 12px; border: 2px solid #dfe3e8; border-radius: 8px; font-family: monospace; box-sizing: border-box; resize: vertical; }
-        .btn { width: 100%; background: #007bff; color: white; padding: 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; margin-bottom: 30px; }
+        label { font-weight: bold; display: block; margin-bottom: 8px; color: #555; }
+        textarea { width: 100%; height: 250px; padding: 12px; border: 2px solid #ced4da; border-radius: 8px; font-family: monospace; font-size: 13px; box-sizing: border-box; resize: vertical; }
+        textarea:focus { border-color: #007bff; outline: none; box-shadow: 0 0 0 3px rgba(0,123,255,0.1); }
+        .btn { width: 100%; background: #007bff; color: white; padding: 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; text-transform: uppercase; transition: background 0.3s; }
         .btn:hover { background: #0056b3; }
-        .result-box { display: none; margin-top: 20px; border-top: 2px solid #eee; padding-top: 20px; }
-        .json-container { background: #24292e; color: #9be9a8; padding: 20px; border-radius: 8px; font-family: monospace; word-break: break-all; max-height: 150px; overflow-y: auto; margin-bottom: 10px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #e1e4e8; padding: 10px; text-align: left; font-size: 13px; }
-        th { background: #f8f9fa; }
-        .copy-btn { background: #28a745; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; float: right; }
+        #resultArea { display: none; margin-top: 30px; border-top: 2px solid #eee; padding-top: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; font-size: 13px; }
+        th { background: #f8f9fa; color: #495057; position: sticky; top: 0; }
+        /* Hidden JSON container for the extension to find */
+        #jsonDisplay { display: none; }
+        .status-badge { display: inline-block; padding: 5px 12px; background: #28a745; color: white; border-radius: 20px; font-size: 12px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Data Bridge Central</h1>
-        <p>Paste your columns from Excel or Word.</p>
+        <div class="header">
+            <h1>Data Bridge: Excel to Extension</h1>
+            <p>Paste your narration columns separately. The extension will read the table below.</p>
+        </div>
         
         <div class="input-grid">
             <div>
-                <strong>1. Justification Column</strong>
+                <label>1. Justification Column (Tempo/Tonal)</label>
                 <textarea id="justInput" placeholder="Paste Column A here..."></textarea>
             </div>
             <div>
-                <strong>2. Content Description Column</strong>
+                <label>2. Content Description (Symmetrical)</label>
                 <textarea id="descInput" placeholder="Paste Column B here..."></textarea>
             </div>
         </div>
 
-        <button class="btn" onclick="processBridge()">BUILD BRIDGE TABLE & CODE</button>
+        <button class="btn" onclick="buildTable()">Build Sync Table</button>
 
-        <div id="resultSection" class="result-box">
-            <button class="copy-btn" onclick="copyJSON()">Copy Code</button>
-            <h3>3. Extension JSON Code</h3>
-            <div id="jsonDisplay" class="json-container"></div>
-
-            <h3>4. Verification Table</h3>
-            <div id="tableDisplay"></div>
+        <div id="resultArea">
+            <div class="status-badge">Table Ready for Sync</div>
+            <div id="jsonDisplay"></div> <h3>Verification Table</h3>
+            <div id="tableContainer"></div>
         </div>
     </div>
 
     <script>
-        function processBridge() {
-            // Get raw text and split into arrays
+        function buildTable() {
             const justText = document.getElementById('justInput').value.trim();
             const descText = document.getElementById('descInput').value.trim();
             
             if (!justText || !descText) {
-                alert("Please paste data into both fields first!");
+                alert("Please paste data into both columns first.");
                 return;
             }
 
-            const justArray = justText.split('\n');
-            const descArray = descText.split('\n');
-            
-            const combined = [];
-            const length = Math.max(justArray.length, descArray.length);
+            const justRows = justText.split('\n');
+            const descRows = descText.split('\n');
+            const dataForExtension = [];
+            const maxRows = Math.max(justRows.length, descRows.length);
 
-            let tableHTML = '<table><tr><th>#</th><th>Justification</th><th>Content Description</th></tr>';
+            let html = '<table><thead><tr><th>#</th><th>Justification</th><th>Content Description</th></tr></thead><tbody>';
 
-            for (let i = 0; i < length; i++) {
-                const jValue = (justArray[i] || "").trim();
-                const dValue = (descArray[i] || "").trim();
+            for (let i = 0; i < maxRows; i++) {
+                const jValue = (justRows[i] || "").trim();
+                const dValue = (descRows[i] || "").trim();
                 
-                combined.push([jValue, dValue]);
-                tableHTML += `<tr><td>${i}</td><td>${jValue}</td><td>${dValue}</td></tr>`;
+                dataForExtension.push([jValue, dValue]);
+                html += `<tr><td>${i + 1}</td><td>${jValue}</td><td>${dValue}</td></tr>`;
             }
-            tableHTML += '</table>';
+            html += '</tbody></table>';
 
-            // Show results
-            document.getElementById('resultSection').style.display = 'block';
-            document.getElementById('jsonDisplay').innerText = JSON.stringify(combined);
-            document.getElementById('tableDisplay').innerHTML = tableHTML;
-        }
-
-        function copyJSON() {
-            const code = document.getElementById('jsonDisplay').innerText;
-            navigator.clipboard.writeText(code).then(() => {
-                alert("Code copied to clipboard! You can now paste it into your extension.");
-            });
+            // Show and Populate
+            document.getElementById('resultArea').style.display = 'block';
+            document.getElementById('tableContainer').innerHTML = html;
+            
+            // Store data in a way the extension can grab
+            document.getElementById('jsonDisplay').innerText = JSON.stringify(dataForExtension);
         }
     </script>
 </body>
