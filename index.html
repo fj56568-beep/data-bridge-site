@@ -2,85 +2,60 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>253-Row Extension Bridge</title>
+    <title>Data Bridge - Get Extension Code</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: #f0f4f8; color: #333; }
-        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .header { border-bottom: 2px solid #007bff; margin-bottom: 25px; padding-bottom: 10px; }
-        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-        label { font-weight: bold; display: block; margin-bottom: 8px; color: #555; }
-        textarea { width: 100%; height: 250px; padding: 12px; border: 2px solid #ced4da; border-radius: 8px; font-family: monospace; font-size: 13px; box-sizing: border-box; resize: vertical; }
-        textarea:focus { border-color: #007bff; outline: none; box-shadow: 0 0 0 3px rgba(0,123,255,0.1); }
-        .btn { width: 100%; background: #007bff; color: white; padding: 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; text-transform: uppercase; transition: background 0.3s; }
-        .btn:hover { background: #0056b3; }
-        #resultArea { display: none; margin-top: 30px; border-top: 2px solid #eee; padding-top: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
-        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; font-size: 13px; }
-        th { background: #f8f9fa; color: #495057; position: sticky; top: 0; }
-        /* Hidden JSON container for the extension to find */
-        #jsonDisplay { display: none; }
-        .status-badge { display: inline-block; padding: 5px 12px; background: #28a745; color: white; border-radius: 20px; font-size: 12px; margin-bottom: 10px; }
+        body { font-family: sans-serif; padding: 20px; background: #f4f7f9; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .input-flex { display: flex; gap: 15px; margin-bottom: 20px; }
+        textarea { flex: 1; height: 200px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        .btn { width: 100%; background: #007bff; color: white; padding: 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        #outputWrapper { display: none; margin-top: 25px; }
+        .code-area { background: #222; color: #0f0; padding: 15px; border-radius: 5px; word-break: break-all; font-family: monospace; margin-bottom: 20px; max-height: 150px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
+        th { background: #eee; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>Data Bridge: Excel to Extension</h1>
-            <p>Paste your narration columns separately. The extension will read the table below.</p>
+        <h2>1. Paste Your Data</h2>
+        <div class="input-flex">
+            <textarea id="jIn" placeholder="Paste Justification Column here..."></textarea>
+            <textarea id="dIn" placeholder="Paste Description Column here..."></textarea>
         </div>
-        
-        <div class="input-grid">
-            <div>
-                <label>1. Justification Column (Tempo/Tonal)</label>
-                <textarea id="justInput" placeholder="Paste Column A here..."></textarea>
-            </div>
-            <div>
-                <label>2. Content Description (Symmetrical)</label>
-                <textarea id="descInput" placeholder="Paste Column B here..."></textarea>
-            </div>
-        </div>
+        <button class="btn" onclick="generate()">BUILD BRIDGE TABLE & CODE</button>
 
-        <button class="btn" onclick="buildTable()">Build Sync Table</button>
-
-        <div id="resultArea">
-            <div class="status-badge">Table Ready for Sync</div>
-            <div id="jsonDisplay"></div> <h3>Verification Table</h3>
-            <div id="tableContainer"></div>
+        <div id="outputWrapper">
+            <h2>2. Copy this Bridge Code</h2>
+            <div id="codeDisplay" class="code-area"></div>
+            
+            <h2>3. Verification Table</h2>
+            <div id="tableDisplay"></div>
         </div>
     </div>
 
     <script>
-        function buildTable() {
-            const justText = document.getElementById('justInput').value.trim();
-            const descText = document.getElementById('descInput').value.trim();
-            
-            if (!justText || !descText) {
-                alert("Please paste data into both columns first.");
-                return;
+        function generate() {
+            const jRows = document.getElementById('jIn').value.trim().split('\n');
+            const dRows = document.getElementById('dIn').value.trim().split('\n');
+            const data = [];
+            let table = '<table><tr><th>Row</th><th>Justification</th><th>Description</th></tr>';
+
+            const max = Math.max(jRows.length, dRows.length);
+            for (let i = 0; i < max; i++) {
+                const jVal = (jRows[i] || "").trim();
+                const dVal = (dRows[i] || "").trim();
+                if (jVal || dVal) {
+                    data.push([jVal, dVal]);
+                    table += `<tr><td>${i+1}</td><td>${jVal}</td><td>${dVal}</td></tr>`;
+                }
             }
+            table += '</table>';
 
-            const justRows = justText.split('\n');
-            const descRows = descText.split('\n');
-            const dataForExtension = [];
-            const maxRows = Math.max(justRows.length, descRows.length);
-
-            let html = '<table><thead><tr><th>#</th><th>Justification</th><th>Content Description</th></tr></thead><tbody>';
-
-            for (let i = 0; i < maxRows; i++) {
-                const jValue = (justRows[i] || "").trim();
-                const dValue = (descRows[i] || "").trim();
-                
-                dataForExtension.push([jValue, dValue]);
-                html += `<tr><td>${i + 1}</td><td>${jValue}</td><td>${dValue}</td></tr>`;
-            }
-            html += '</tbody></table>';
-
-            // Show and Populate
-            document.getElementById('resultArea').style.display = 'block';
-            document.getElementById('tableContainer').innerHTML = html;
-            
-            // Store data in a way the extension can grab
-            document.getElementById('jsonDisplay').innerText = JSON.stringify(dataForExtension);
+            // IMPORTANT: This makes the code and table visible
+            document.getElementById('outputWrapper').style.display = 'block';
+            document.getElementById('codeDisplay').innerText = JSON.stringify(data);
+            document.getElementById('tableDisplay').innerHTML = table;
         }
     </script>
 </body>
