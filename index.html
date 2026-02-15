@@ -2,60 +2,67 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Data Bridge - Get Extension Code</title>
+    <title>Fixed Data Bridge</title>
     <style>
         body { font-family: sans-serif; padding: 20px; background: #f4f7f9; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .input-flex { display: flex; gap: 15px; margin-bottom: 20px; }
-        textarea { flex: 1; height: 200px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+        .flex { display: flex; gap: 10px; margin-bottom: 20px; }
+        textarea { flex: 1; height: 200px; padding: 10px; border: 2px solid #ddd; border-radius: 5px; }
         .btn { width: 100%; background: #007bff; color: white; padding: 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        #outputWrapper { display: none; margin-top: 25px; }
-        .code-area { background: #222; color: #0f0; padding: 15px; border-radius: 5px; word-break: break-all; font-family: monospace; margin-bottom: 20px; max-height: 150px; overflow-y: auto; }
+        /* This section MUST be visible after clicking */
+        #bridgeOutput { display: none; margin-top: 20px; border-top: 2px solid #007bff; padding-top: 20px; }
+        .code-box { background: #222; color: #0f0; padding: 15px; border-radius: 5px; word-break: break-all; font-family: monospace; margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
-        th { background: #eee; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>1. Paste Your Data</h2>
-        <div class="input-flex">
-            <textarea id="jIn" placeholder="Paste Justification Column here..."></textarea>
-            <textarea id="dIn" placeholder="Paste Description Column here..."></textarea>
+        <h1>253-Row Bridge</h1>
+        <div class="flex">
+            <textarea id="justField" placeholder="Paste Column A here..."></textarea>
+            <textarea id="descField" placeholder="Paste Column B here..."></textarea>
         </div>
-        <button class="btn" onclick="generate()">BUILD BRIDGE TABLE & CODE</button>
+        <button class="btn" onclick="buildBridge()">BUILD SYNC TABLE & CODE</button>
 
-        <div id="outputWrapper">
-            <h2>2. Copy this Bridge Code</h2>
-            <div id="codeDisplay" class="code-area"></div>
+        <div id="bridgeOutput">
+            <h3>1. Copy this for Extension:</h3>
+            <div id="jsonCode" class="code-box"></div>
             
-            <h2>3. Verification Table</h2>
-            <div id="tableDisplay"></div>
+            <h3>2. Verification Table</h3>
+            <div id="tableView"></div>
         </div>
     </div>
 
     <script>
-        function generate() {
-            const jRows = document.getElementById('jIn').value.trim().split('\n');
-            const dRows = document.getElementById('dIn').value.trim().split('\n');
-            const data = [];
-            let table = '<table><tr><th>Row</th><th>Justification</th><th>Description</th></tr>';
-
-            const max = Math.max(jRows.length, dRows.length);
-            for (let i = 0; i < max; i++) {
-                const jVal = (jRows[i] || "").trim();
-                const dVal = (dRows[i] || "").trim();
-                if (jVal || dVal) {
-                    data.push([jVal, dVal]);
-                    table += `<tr><td>${i+1}</td><td>${jVal}</td><td>${dVal}</td></tr>`;
-                }
+        function buildBridge() {
+            // Get data
+            const justRaw = document.getElementById('justField').value.trim();
+            const descRaw = document.getElementById('descField').value.trim();
+            
+            if (!justRaw || !descRaw) {
+                alert("Please paste data in both boxes first!");
+                return;
             }
-            table += '</table>';
 
-            // IMPORTANT: This makes the code and table visible
-            document.getElementById('outputWrapper').style.display = 'block';
-            document.getElementById('codeDisplay').innerText = JSON.stringify(data);
-            document.getElementById('tableDisplay').innerHTML = table;
+            const justLines = justRaw.split('\n');
+            const descLines = descRaw.split('\n');
+            const combined = [];
+            let tableHtml = '<table><tr><th>#</th><th>Justification</th><th>Description</th></tr>';
+
+            const count = Math.max(justLines.length, descLines.length);
+            for (let i = 0; i < count; i++) {
+                const j = (justLines[i] || "").trim();
+                const d = (descLines[i] || "").trim();
+                combined.push([j, d]);
+                tableHtml += `<tr><td>${i+1}</td><td>${j}</td><td>${d}</td></tr>`;
+            }
+            tableHtml += '</table>';
+
+            // FORCE EVERYTHING TO SHOW
+            document.getElementById('bridgeOutput').style.display = 'block';
+            document.getElementById('jsonCode').innerText = JSON.stringify(combined);
+            document.getElementById('tableView').innerHTML = tableHtml;
         }
     </script>
 </body>
